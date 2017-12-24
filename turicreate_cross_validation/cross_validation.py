@@ -199,7 +199,6 @@ def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_g
     evaluator: function (model, training_set, validation_set) -> dict, optional
         The evaluation function takes as input the model, training and validation SFrames,
         and returns a dictionary of evaluation metrics where each value is a simple type, e.g. float, str, or int.
-    label: str
 
     Returns
     -------
@@ -212,10 +211,11 @@ def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_g
         >>> sf = tc.SFrame.read_csv(url)
         >>> folds = StratifiedKFold(sf)
         >>> params = {'target': 'label'}
-        >>> cross_val_score(folds, tc.random_forest_classifier.create, params, label='label')
+        >>> cross_val_score(folds, tc.random_forest_classifier.create, params)
     """
     if not model_parameters:
-        model_parameters = {}
+        model_parameters = {'target': 'label'}
+    label = model_parameters['target']
     cross_val_metrics = defaultdict(list)
     for train, test in datasets:
         model = model_factory(train, **model_parameters)
