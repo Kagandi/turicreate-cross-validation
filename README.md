@@ -13,7 +13,7 @@ sf['label'] = (sf['label'] == 'p')
 params = {'target': 'label'}
 sf = shuffle_sframe(sf)
 folds = StratifiedKFold(sf, 'label', 5)
-cross_val_score(folds, tc.random_forest_classifier.create, params, label='label')
+cross_val_score(folds, tc.random_forest_classifier.create, params)
 ```
 
 ## Credits

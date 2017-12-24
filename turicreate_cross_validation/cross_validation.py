@@ -179,8 +179,7 @@ def StratifiedKFold(data, label='label', n_folds=10):
         yield KFold(data, n_folds)
 
 
-def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_get_classification_metrics,
-                    label='label'):
+def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_get_classification_metrics):
     """
     Evaluate model performance via cross validation for a given set of parameters.
 
