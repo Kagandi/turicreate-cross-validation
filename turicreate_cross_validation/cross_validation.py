@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-This module API is compatible with the old graphlab-create cross_validation module.
+This module API is mostly compatible with the old graphlab-create cross_validation module.
 https://turi.com/products/create/docs/graphlab.toolkits.cross_validation.html
 """
 import numpy as np
@@ -7,14 +8,56 @@ import turicreate as tc
 from collections import defaultdict
 
 
-def shuffle_sframe(sf, random_seed=None):
-    sf["shuffle_col"] = tc.SArray.random_integers(sf.num_rows(), random_seed)
-    return sf.sort("shuffle_col").remove_column("shuffle_col")
-
-
-def kfold_sections(data, n_folds):
+def _get_classification_metrics(model, targets, predictions):
     """
-    Based on scikit implementation.
+
+    Parameters
+    ----------
+    model: Classifier
+        Turi create trained classifier.
+    targets: SArray
+        Array containing the expected labels.
+    predictions: SArray
+        Array containing the predicted labels.
+
+    Returns
+    -------
+    dict
+        An average metrics of the n folds.
+
+    """
+    precision = tc.evaluation.precision(targets, predictions)
+    accuracy = tc.evaluation.accuracy(targets, predictions)
+    recall = tc.evaluation.recall(targets, predictions)
+    auc = tc.evaluation.auc(targets, predictions)
+    return {"recall": recall,
+            "precision": precision,
+            "accuracy": accuracy,
+            "auc": auc
+            }
+
+
+def _kfold_sections(data, n_folds):
+    """
+    Calculate the indexes of the splits that should
+    be used to split the data into n_folds.
+
+    Parameters
+    ----------
+    data: SFrame
+        A Non empty SFrame.
+    n_folds: int
+        The number of folds to create. Must be at least 2.
+
+
+    Yields
+    -------
+    (int, int)
+        Yields the first and last index of the fold.
+
+    Notes
+    -----
+        Based on scikit implementation.
     """
     Neach_section, extras = divmod(len(data), n_folds)
     section_sizes = ([0] +
@@ -27,18 +70,104 @@ def kfold_sections(data, n_folds):
         yield st, end
 
 
-def split_kfold(data, n_folds=10):
-    for st, end in kfold_sections(data, n_folds):
+def shuffle_sframe(sf, random_seed=None):
+    """
+    Create a copy of the SFrame where the rows have been shuffled randomly.
+
+    Parameters
+    ----------
+    sf: SFrame
+        A Non empty SFrame.
+    random_seed: int, optional
+        Random seed to use for the randomization. If provided, each call
+        to this method will produce an identical result.
+
+    Returns
+    -------
+    SFrame
+        A randomly shuffled SFrame.
+
+    Examples
+    --------
+        >>> url = 'https://static.turi.com/datasets/xgboost/mushroom.csv'
+        >>> sf = tc.SFrame.read_csv(url)
+        >>> shuffle_sframe(sf)
+    """
+    sf["shuffle_col"] = tc.SArray.random_integers(sf.num_rows(), random_seed)
+    return sf.sort("shuffle_col").remove_column("shuffle_col")
+
+
+def KFold(data, n_folds=10):
+    """
+    Create a K-Fold split of a data set as an iterable/indexable object of K pairs,
+    where each pair is a partition of the dataset.  This can be useful for cross
+    validation, where each fold is used as a held out dataset while training
+    on the remaining data.
+
+    Parameters
+    ----------
+    data: SFrame
+        A Non empty SFrame.
+    n_folds: int
+        The number of folds to create. Must be at least 2.
+
+    Notes
+    -----
+    This does not shuffle the data. Shuffling your data is a useful preprocessing step when doing cross validation.
+
+    Yields
+    -------
+    (SArray, SArray)
+        Yields train, test of each fold
+
+    Examples
+    --------
+        >>> url = 'https://static.turi.com/datasets/xgboost/mushroom.csv'
+        >>> sf = tc.SFrame.read_csv(url)
+        >>> folds = KFold(sf)
+    """
+    for st, end in _kfold_sections(data, n_folds):
         idx = np.zeros(len(data))
         idx[st:end] = 1
         yield data[tc.SArray(1 - idx)], data[tc.SArray(idx)]
 
 
-def split_stratified_kfold(data, label='label', n_folds=10):
+def StratifiedKFold(data, label='label', n_folds=10):
+    """
+    Create a Starified K-Fold split of a data set as an iteratable/indexable object
+    of K pairs, where each pair is a partition of the data set. This can be useful
+    for cross validation, where each fold is used as a heldout dataset while
+    training on the remaining data. Unlike the regular KFold the folds are
+    made by preserving the percentage of samples for each class.
+
+    Parameters
+    ----------
+    data: SFrame
+        A Non empty SFrame.
+    label: str
+        The target/class column name in the SFrame.
+    n_folds: int
+        The number of folds to create. Must be at least 2.
+
+    Notes
+    -----
+    This does not shuffle the data. Shuffling your data is a useful preprocessing step when doing cross validation.
+
+    Yields
+    -------
+    (SArray, SArray)
+        Yields train, test of each fold
+
+    Examples
+    --------
+        >>> url = 'https://static.turi.com/datasets/xgboost/mushroom.csv'
+        >>> sf = tc.SFrame.read_csv(url)
+        >>> folds = StratifiedKFold(sf)
+    """
     if label in data.column_names():
         labels = data[label].unique()
         labeled_data = [data[data[label] == l] for l in labels]
-        fold = [split_kfold(item, n_folds) for item in labeled_data]
+        fold = [KFold(item, n_folds) for item in labeled_data]
         for _ in range(n_folds):
             train, test = tc.SFrame(), tc.SFrame()
             for f in fold:
@@ -47,10 +176,44 @@ def split_stratified_kfold(data, label='label', n_folds=10):
                 test = test.append(x_test)
             yield train, test
     else:
-        yield split_kfold(data, n_folds)
+        yield KFold(data, n_folds)
 
 
-def cross_validate(datasets, model_factory, model_parameters=None, evaluator=get_classification_metrics, label='label'):
+def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_get_classification_metrics,
+                    label='label'):
+    """
+    Evaluate model performance via cross validation for a given set of parameters.
+
+    Parameters
+    ----------
+    datasets: iterable of tuples
+        The data used to train the model on a format of iterable of tuples.
+        The tuples should be in a format of (train, test).
+    model_factory: function
+        This is the function used to create the model.
+        For example, to perform model_parameter_search using the
+        GraphLab Create model graphlab.linear_regression.LinearRegression,
+        the model_factory is graphlab.linear_regression.create().
+    model_parameters: dict
+        The params argument takes a dictionary containing parameters that will be passed to the provided model factory.
+    evaluator: function (model, training_set, validation_set) -> dict, optional
+        The evaluation function takes as input the model, training and validation SFrames,
+        and returns a dictionary of evaluation metrics where each value is a simple type, e.g. float, str, or int.
+    label: str
+
+    Returns
+    -------
+    dict
+        The calculate metrics for the cross validation.
+
+    Examples
+    --------
+        >>> url = 'https://static.turi.com/datasets/xgboost/mushroom.csv'
+        >>> sf = tc.SFrame.read_csv(url)
+        >>> folds = StratifiedKFold(sf)
+        >>> params = {'target': 'label'}
+        >>> cross_val_score(folds, tc.random_forest_classifier.create, params, label='label')
+    """
     if not model_parameters:
         model_parameters = {}
     cross_val_metrics = defaultdict(list)
