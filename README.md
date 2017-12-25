@@ -4,6 +4,8 @@ This module was developed to supply a cross-validation functions to turicreate, 
 The API and docstrings are mostly based on the [old version of turicrate](https://turi.com/products/create/docs/graphlab.toolkits.cross_validation.html).
 
 ## Usage
+Install using: ```pip install -e git+https://github.com/Kagandi/turicreate-cross-validation.git```
+Since the project is pretty small you also can just use cross_validation.py in your project. 
 ```python
 import turicreate as tc
 from turicreate_cross_validation import shuffle_sframe, StratifiedKFold, cross_val_score
