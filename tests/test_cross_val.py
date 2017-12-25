@@ -1,4 +1,4 @@
-from turicreate_cross_validation.cross_validation import *
+from turicreate_cross_validation import *
 import turicreate as tc
 import pytest
 from turicreate.toolkits._main import ToolkitError
@@ -88,6 +88,14 @@ def test_cross_val_score_with_wrong_label():
     folds = StratifiedKFold(data, 'label', 5)
     with pytest.raises(ToolkitError):
         cross_val_score(folds, tc.random_forest_classifier.create, params)
+
+
+def test_StratifiedKFold_with_wrong_label():
+    data = tc.SFrame({"id": range(100), 'label': [0] * 50 + [1] * 50})
+    with pytest.raises(ToolkitError):
+        folds = StratifiedKFold(data, 'label2', 5)
+        for train ,test in folds:
+            pass
 
 
 def test_cross_val_basic():

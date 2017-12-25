@@ -7,6 +7,7 @@ import numpy as np
 import turicreate as tc
 from collections import defaultdict
 from turicreate.toolkits._main import ToolkitError
+from turicreate.toolkits._internal_utils import _raise_error_if_column_exists
 
 
 def _get_classification_metrics(model, targets, predictions):
@@ -169,19 +170,18 @@ def StratifiedKFold(data, label='label', n_folds=10):
         >>> sf = tc.SFrame.read_csv(url)
         >>> folds = StratifiedKFold(sf)
     """
-    if label in data.column_names():
-        labels = data[label].unique()
-        labeled_data = [data[data[label] == l] for l in labels]
-        fold = [KFold(item, n_folds) for item in labeled_data]
-        for _ in range(n_folds):
-            train, test = tc.SFrame(), tc.SFrame()
-            for f in fold:
-                x_train, x_test = f.next()
-                train = train.append(x_train)
-                test = test.append(x_test)
-            yield train, test
-    else:
-        yield KFold(data, n_folds)
+    _raise_error_if_column_exists(data, label, 'data', label)
+
+    labels = data[label].unique()
+    labeled_data = [data[data[label] == l] for l in labels]
+    fold = [KFold(item, n_folds) for item in labeled_data]
+    for _ in range(n_folds):
+        train, test = tc.SFrame(), tc.SFrame()
+        for f in fold:
+            x_train, x_test = f.next()
+            train = train.append(x_train)
+            test = test.append(x_test)
+        yield train, test
 
 
 def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_get_classification_metrics):
@@ -224,9 +224,8 @@ def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_g
     cross_val_metrics = defaultdict(list)
     for train, test in datasets:
 
-        if label not in train.column_names() or label not in test.column_names():
-            raise ToolkitError("Input data does not target column named: " +
-                               "{}".format(label))
+        _raise_error_if_column_exists(train, label, 'train', label)
+        _raise_error_if_column_exists(test, label, 'test', label)
 
         model = model_factory(train, **model_parameters)
         prediction = model.predict(test)
