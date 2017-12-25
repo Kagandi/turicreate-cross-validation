@@ -6,6 +6,7 @@ https://turi.com/products/create/docs/graphlab.toolkits.cross_validation.html
 import numpy as np
 import turicreate as tc
 from collections import defaultdict
+from turicreate.toolkits._main import ToolkitError
 
 
 def _get_classification_metrics(model, targets, predictions):
@@ -126,6 +127,8 @@ def KFold(data, n_folds=10):
         >>> sf = tc.SFrame.read_csv(url)
         >>> folds = KFold(sf)
     """
+    if data.num_rows() < n_folds:
+        raise ValueError
     for st, end in _kfold_sections(data, n_folds):
         idx = np.zeros(len(data))
         idx[st:end] = 1
@@ -139,6 +142,8 @@ def StratifiedKFold(data, label='label', n_folds=10):
     for cross validation, where each fold is used as a heldout dataset while
     training on the remaining data. Unlike the regular KFold the folds are
     made by preserving the percentage of samples for each class.
+    The StratifiedKFold is more suitable for smaller datasets
+    or for datasets where there a is a minority class.
 
     Parameters
     ----------
@@ -215,8 +220,14 @@ def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_g
     if not model_parameters:
         model_parameters = {'target': 'label'}
     label = model_parameters['target']
+
     cross_val_metrics = defaultdict(list)
     for train, test in datasets:
+
+        if label not in train.column_names() or label not in test.column_names():
+            raise ToolkitError("Input data does not target column named: " +
+                               "{}".format(label))
+
         model = model_factory(train, **model_parameters)
         prediction = model.predict(test)
         metrics = evaluator(model, test[label], prediction)
