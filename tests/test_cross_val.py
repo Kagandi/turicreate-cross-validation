@@ -1,4 +1,5 @@
-from turicreate_cross_validation import *
+
+from turicreate_cross_validation import KFold, StratifiedKFold, cross_val_score
 import turicreate as tc
 import pytest
 from turicreate.toolkits._main import ToolkitError

@@ -1,4 +1,5 @@
-from turicreate_cross_validation.cross_validation import *
+import turicreate as tc
+from turicreate_cross_validation import shuffle_sframe, StratifiedKFold, cross_val_score
 
 if __name__ == "__main__":
     url = 'https://static.turi.com/datasets/xgboost/mushroom.csv'
