@@ -6,7 +6,6 @@ https://turi.com/products/create/docs/graphlab.toolkits.cross_validation.html
 import numpy as np
 import turicreate as tc
 from collections import defaultdict
-from turicreate.toolkits._main import ToolkitError
 from turicreate.toolkits._internal_utils import _raise_error_if_column_exists
 
 
@@ -72,7 +71,7 @@ def _kfold_sections(data, n_folds):
         yield st, end
 
 
-def shuffle_sframe(sf, random_seed=None):
+def shuffle_sframe(sf, random_seed=None, temp_shuffle_col="shuffle_col"):
     """
     Create a copy of the SFrame where the rows have been shuffled randomly.
 
@@ -83,6 +82,8 @@ def shuffle_sframe(sf, random_seed=None):
     random_seed: int, optional
         Random seed to use for the randomization. If provided, each call
         to this method will produce an identical result.
+    temp_shuffle_col: str, optional
+        Change only if you use the same column name.
 
     Returns
     -------
@@ -95,8 +96,8 @@ def shuffle_sframe(sf, random_seed=None):
         >>> sf = tc.SFrame.read_csv(url)
         >>> shuffle_sframe(sf)
     """
-    sf["shuffle_col"] = tc.SArray.random_integers(sf.num_rows(), random_seed)
-    return sf.sort("shuffle_col").remove_column("shuffle_col")
+    sf[temp_shuffle_col] = tc.SArray.random_integers(sf.num_rows(), random_seed)
+    return sf.sort(temp_shuffle_col).remove_column(temp_shuffle_col)
 
 
 def KFold(data, n_folds=10):
