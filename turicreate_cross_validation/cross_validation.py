@@ -7,6 +7,7 @@ import numpy as np
 import turicreate as tc
 from collections import defaultdict
 from turicreate.toolkits._internal_utils import _raise_error_if_column_exists
+from turicreate.toolkits._main import ToolkitError
 
 
 def _get_classification_metrics(model, targets, predictions):
@@ -96,6 +97,10 @@ def shuffle_sframe(sf, random_seed=None, temp_shuffle_col="shuffle_col"):
         >>> sf = tc.SFrame.read_csv(url)
         >>> shuffle_sframe(sf)
     """
+
+    if temp_shuffle_col in sf.column_names():
+        raise ToolkitError('The SFrame already contains column named {0}. '
+                           'Please enter set another value to temp_shuffle_col'.format(temp_shuffle_col))
     sf[temp_shuffle_col] = tc.SArray.random_integers(sf.num_rows(), random_seed)
     return sf.sort(temp_shuffle_col).remove_column(temp_shuffle_col)
 
