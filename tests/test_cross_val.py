@@ -1,5 +1,6 @@
-
-from turicreate_cross_validation import KFold, StratifiedKFold, cross_val_score
+from itertools import izip
+from turicreate_cross_validation import KFold, StratifiedKFold, cross_val_score, shuffle_sframe
+from turicreate_cross_validation.cross_validation import _kfold_sections
 import turicreate as tc
 import pytest
 from turicreate.toolkits._main import ToolkitError
@@ -95,7 +96,7 @@ def test_StratifiedKFold_with_wrong_label():
     data = tc.SFrame({"id": range(100), 'label': [0] * 50 + [1] * 50})
     with pytest.raises(ToolkitError):
         folds = StratifiedKFold(data, 'label2', 5)
-        for train ,test in folds:
+        for train, test in folds:
             pass
 
 
@@ -105,3 +106,29 @@ def test_cross_val_basic():
     folds = StratifiedKFold(data, 'label', 5)
     metrics = cross_val_score(folds, tc.decision_tree_classifier.create, params)
     assert metrics == {'recall': 1.0, 'auc': 1.0, 'precision': 1.0, 'accuracy': 1.0}
+
+
+def test_shuffle_sframe_id_different():
+    data = tc.SFrame({"id": range(100), 'id2': range(100)})
+    shuffled_sframe = shuffle_sframe(data)
+    assert len(shuffled_sframe) == len(data)
+    for item, shuffeled_item in izip(data, shuffled_sframe):
+        assert item != shuffeled_item
+
+
+def test_shuffle_sframe_same_items():
+    data = tc.SFrame({"id": range(100), 'id2': range(100)})
+    shuffled_sframe = shuffle_sframe(data)
+    shuffled_sframe = shuffled_sframe.sort("id")
+    for item, shuffeled_item in izip(data, shuffled_sframe):
+        assert item != shuffeled_item
+
+
+def test_kfold_sections():
+    data = tc.SFrame({"id": range(100), 'id2': range(100)})
+    prev_end = None
+    for st, end in _kfold_sections(data, 10):
+        assert end - st == 10
+        if prev_end:
+            assert prev_end == st
+        prev_end = end
