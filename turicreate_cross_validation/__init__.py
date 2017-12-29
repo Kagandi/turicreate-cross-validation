@@ -1,1 +1,3 @@
-from turicreate_cross_validation.cross_validation import shuffle_sframe, KFold, StratifiedKFold, cross_val_score
+from __future__ import absolute_import as _
+
+from . import cross_validation

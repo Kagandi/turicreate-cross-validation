@@ -1,12 +1,12 @@
 from itertools import izip
-from turicreate_cross_validation import KFold, StratifiedKFold, cross_val_score, shuffle_sframe
-from turicreate_cross_validation.cross_validation import _kfold_sections
+from turicreate_cross_validation.cross_validation import KFold, StratifiedKFold, cross_val_score, shuffle_sframe, \
+    _kfold_sections
 import turicreate as tc
 import pytest
 from turicreate.toolkits._main import ToolkitError
 
 
-def test_kfod_split_number():
+def test_kfold_split_number():
     data = tc.SFrame({"id": range(100)})
     assert len(list(KFold(data, 10))) == 10
     assert len(list(KFold(data, 5))) == 5
@@ -18,7 +18,7 @@ def test_stratified_kfold_split_number():
     assert len(list(StratifiedKFold(data, 'label', 5))) == 5
 
 
-def test_kfod_split_size():
+def test_kfold_split_size():
     data = tc.SFrame({"id": range(100)})
     for train, test in KFold(data, 10):
         assert len(train) == 90
