@@ -110,10 +110,13 @@ def test_cross_val_basic():
 
 def test_shuffle_sframe_id_different():
     data = tc.SFrame({"id": range(100), 'id2': range(100)})
+    equal_counter = 0
     shuffled_sframe = shuffle_sframe(data)
     assert len(shuffled_sframe) == len(data)
     for item, shuffeled_item in izip(data, shuffled_sframe):
-        assert item != shuffeled_item
+        if item == shuffeled_item:
+            equal_counter += 1
+    assert equal_counter != len(data)
 
 
 def test_shuffle_sframe_same_items():
@@ -121,7 +124,7 @@ def test_shuffle_sframe_same_items():
     shuffled_sframe = shuffle_sframe(data)
     shuffled_sframe = shuffled_sframe.sort("id")
     for item, shuffeled_item in izip(data, shuffled_sframe):
-        assert item != shuffeled_item
+        assert item == shuffeled_item
 
 
 def test_kfold_sections():
