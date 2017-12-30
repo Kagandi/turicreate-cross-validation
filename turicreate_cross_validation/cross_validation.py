@@ -101,8 +101,9 @@ def shuffle_sframe(sf, random_seed=None, temp_shuffle_col="shuffle_col"):
     if temp_shuffle_col in sf.column_names():
         raise ToolkitError('The SFrame already contains column named {0}. '
                            'Please enter set another value to temp_shuffle_col'.format(temp_shuffle_col))
-    sf[temp_shuffle_col] = tc.SArray.random_integers(sf.num_rows(), random_seed)
-    return sf.sort(temp_shuffle_col).remove_column(temp_shuffle_col)
+    shuffled_sframe = sf.copy()
+    shuffled_sframe[temp_shuffle_col] = tc.SArray.random_integers(sf.num_rows(), random_seed)
+    return shuffled_sframe.sort(temp_shuffle_col).remove_column(temp_shuffle_col)
 
 
 def KFold(data, n_folds=10):
