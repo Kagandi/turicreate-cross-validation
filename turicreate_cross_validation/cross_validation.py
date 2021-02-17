@@ -185,7 +185,7 @@ def StratifiedKFold(data, label='label', n_folds=10):
     for _ in range(n_folds):
         train, test = tc.SFrame(), tc.SFrame()
         for f in fold:
-            x_train, x_test = f.next()
+            x_train, x_test = next(f)
             train = train.append(x_train)
             test = test.append(x_test)
         yield train, test
@@ -237,6 +237,6 @@ def cross_val_score(datasets, model_factory, model_parameters=None, evaluator=_g
         model = model_factory(train, **model_parameters)
         prediction = model.predict(test)
         metrics = evaluator(model, test[label], prediction)
-        for k, v in metrics.iteritems():
+        for k, v in metrics.items():
             cross_val_metrics[k].append(v)
-    return {k: np.mean(v) for k, v in cross_val_metrics.iteritems()}
+    return {k: np.mean(v) for k, v in cross_val_metrics.items()}

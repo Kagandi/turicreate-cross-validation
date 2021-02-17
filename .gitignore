@@ -134,3 +134,6 @@ ENV/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
+
+# misc
+.DS_Store

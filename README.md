@@ -1,4 +1,4 @@
-# turicreate-cross-validation
+# turicreate_-_cross_-_validation
 Implementation  of cross validation for turicreate.
 This module was developed to supply a cross-validation functions to turicreate, until an official version will be implemnted.  
 The API and docstrings are mostly based on the [old version of turicrate](https://turi.com/products/create/docs/graphlab.toolkits.cross_validation.html).
@@ -16,7 +16,7 @@ sf['label'] = (sf['label'] == 'p')
 params = {'target': 'label'}
 sf = shuffle_sframe(sf)
 folds = StratifiedKFold(sf, 'label', 5)
-cross_val_score(folds, tc.random_forest_classifier.create, params)
+print(cross_val_score(folds, tc.random_forest_classifier.create, params))
 ```
 
 ## Credits
