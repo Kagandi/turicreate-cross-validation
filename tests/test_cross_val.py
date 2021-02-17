@@ -1,6 +1,5 @@
-from itertools import izip
-from turicreate_cross_validation.cross_validation import KFold, StratifiedKFold, cross_val_score, shuffle_sframe, \
-    _kfold_sections
+from turicreate_cross_validation import KFold, StratifiedKFold, cross_val_score, shuffle_sframe
+import turicreate_cross_validation.cross_validation as cv 
 import turicreate as tc
 import pytest
 from turicreate.toolkits._main import ToolkitError
@@ -113,7 +112,7 @@ def test_shuffle_sframe_id_different():
     equal_counter = 0
     shuffled_sframe = shuffle_sframe(data)
     assert len(shuffled_sframe) == len(data)
-    for item, shuffeled_item in izip(data, shuffled_sframe):
+    for item, shuffeled_item in zip(data, shuffled_sframe):
         if item == shuffeled_item:
             equal_counter += 1
     assert equal_counter != len(data)
@@ -123,14 +122,14 @@ def test_shuffle_sframe_same_items():
     data = tc.SFrame({"id": range(100), 'id2': range(100)})
     shuffled_sframe = shuffle_sframe(data)
     shuffled_sframe = shuffled_sframe.sort("id")
-    for item, shuffeled_item in izip(data, shuffled_sframe):
+    for item, shuffeled_item in zip(data, shuffled_sframe):
         assert item == shuffeled_item
 
 
 def test_kfold_sections():
     data = tc.SFrame({"id": range(100), 'id2': range(100)})
     prev_end = None
-    for st, end in _kfold_sections(data, 10):
+    for st, end in cv._kfold_sections(data, 10):
         assert end - st == 10
         if prev_end:
             assert prev_end == st
